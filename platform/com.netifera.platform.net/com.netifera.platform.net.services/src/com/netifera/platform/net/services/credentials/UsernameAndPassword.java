@@ -1,7 +1,8 @@
 package com.netifera.platform.net.services.credentials;
 
+import com.netifera.platform.net.services.identities.Identity;
 
-public class UsernameAndPassword implements Credential {
+public class UsernameAndPassword implements Identity, Credential {
 	private static final long serialVersionUID = 2458896370499029332L;
 
 	private final String username;

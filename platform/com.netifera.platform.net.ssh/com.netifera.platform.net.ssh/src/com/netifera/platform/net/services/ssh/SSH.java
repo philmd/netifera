@@ -52,8 +52,8 @@ public class SSH extends NetworkService implements IAuthenticable {
 	public Connection createConnection(Credential credential) throws IOException {
 		if (credential instanceof UsernameAndPassword) {
 			return createConnection((UsernameAndPassword) credential);
-		} else if (credential instanceof SSHKey) {
-			return createConnection((SSHKey) credential);
+		} else if (credential instanceof SSHPrivKey) {
+			return createConnection((SSHPrivKey) credential);
 		}
 		return null;
 	}
@@ -67,9 +67,9 @@ public class SSH extends NetworkService implements IAuthenticable {
 		return conn;
 	}
 
-	public Connection createConnection(SSHKey credential) throws IOException, AuthenticationException {
+	public Connection createConnection(SSHPrivKey credential) throws IOException, AuthenticationException {
 		Connection conn = createConnection();
-		if (!conn.authenticateWithPublicKey(credential.getUsernameString(), credential.getKeyData(), credential.getPasswordString())) {
+		if (!conn.authenticateWithPublicKey(credential.getUsernameString(), credential.getPrivKeyData(), credential.getPasswordString())) {
 			conn.close();
 			throw new AuthenticationException("Bad key");
 		}

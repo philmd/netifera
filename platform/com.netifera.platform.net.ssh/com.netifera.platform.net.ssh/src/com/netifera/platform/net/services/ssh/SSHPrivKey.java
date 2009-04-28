@@ -2,18 +2,18 @@ package com.netifera.platform.net.services.ssh;
 
 import com.netifera.platform.net.services.credentials.Credential;
 
-public class SSHKey implements Credential {
+public class SSHPrivKey extends SSHPubKey implements Credential {
 	private static final long serialVersionUID = 7310471424966959626L;
 
 	private final String username;
 	private final char[] data;
 	private String password;
 
-	public SSHKey(String username, char[] data) {
+	public SSHPrivKey(String username, char[] data) {
 		this(username, data, null);
 	}
 	
-	public SSHKey(String username, char[] data, String password) {
+	public SSHPrivKey(String username, char[] data, String password) {
 		this.username = username;
 		this.data = data;
 		this.password = password;
@@ -23,8 +23,12 @@ public class SSHKey implements Credential {
 		return username;
 	}
 	
-	public char[] getKeyData() {
+	public char[] getPrivKeyData() {
 		return data;
+	}
+	
+	public SSHPubKey getPubKey() {
+		return null; // TODO
 	}
 	
 	public String getPasswordString() {

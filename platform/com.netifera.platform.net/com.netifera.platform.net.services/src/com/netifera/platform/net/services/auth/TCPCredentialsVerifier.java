@@ -26,7 +26,7 @@ public abstract class TCPCredentialsVerifier extends CredentialsVerifier {
 		
 		final TCPChannel channel = TCPChannel.open();
 		connectionsCount.incrementAndGet();
-		channel.connect(locator, 5, TimeUnit.SECONDS, credential, new CompletionHandler<Void,Credential>() {
+		channel.connect(locator, 5, TimeUnit.SECONDS, credential, new CompletionHandler<Boolean, Credential>() {
 			private void closeChannel() {
 				connectionsCount.decrementAndGet();
 				try {
@@ -39,7 +39,7 @@ public abstract class TCPCredentialsVerifier extends CredentialsVerifier {
 				closeChannel();
 			}
 
-			public void completed(Void result, Credential attachment) {
+			public void completed(Boolean result, Credential attachment) {
 				authenticate(channel, attachment, 8, TimeUnit.SECONDS, new CompletionHandler<Boolean,Credential>() {
 					public void cancelled(Credential attachment) {
 						closeChannel();
