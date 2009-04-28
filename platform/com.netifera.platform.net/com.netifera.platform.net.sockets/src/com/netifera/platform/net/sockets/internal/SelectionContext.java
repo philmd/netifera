@@ -9,6 +9,7 @@ import java.nio.channels.SelectionKey;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import com.netifera.platform.api.log.ILogger;
@@ -24,7 +25,7 @@ class SelectionContext {
 	private final SelectableChannel socket;
 	private final ILogger logger;
 	
-	private final Queue<SelectionFuture<Void,?>> connectQueue = new ArrayBlockingQueue<SelectionFuture<Void,?>>(100);
+	private final Queue<SelectionFuture<Boolean,?>> connectQueue = new ArrayBlockingQueue<SelectionFuture<Boolean,?>>(100);
 	private final Queue<SelectionFuture<?,?>> readQueue = new ArrayBlockingQueue<SelectionFuture<?,?>>(100);
 	private final BlockingQueue<SelectionFuture<Integer,?>> writeQueue = new ArrayBlockingQueue<SelectionFuture<Integer,?>>(100);
 	
@@ -35,17 +36,17 @@ class SelectionContext {
 		this.logger = logger;
 	}
 
-	synchronized void enqueueConnect(SelectionFuture<Void,?> future) {
+	synchronized void enqueueConnect(SelectionFuture<Boolean, ?> future) {
 //		System.err.println("enqueue connect "+future+", #"+(connectQueue.size()+1));
 		connectQueue.add(future);
 	}
 
-	synchronized void enqueueRead(SelectionFuture<?,?> future) {
+	synchronized void enqueueRead(SelectionFuture<?, ?> future) {
 //		System.err.println("enqueue read "+future+", #"+(readQueue.size()+1));
 		readQueue.add(future);
 	}
 	
-	synchronized void enqueueWrite(SelectionFuture<Integer,?> future) {
+	synchronized void enqueueWrite(SelectionFuture<Integer, ?> future) {
 //		System.err.println("enqueue write "+future+", #"+(writeQueue.size()+1));
 		try {
 			if(!writeQueue.offer(future, 2, TimeUnit.SECONDS)) {
@@ -133,8 +134,12 @@ class SelectionContext {
 	}
 
 	private void handleOperation(SelectionFuture<?,?> future) {
-		if (future != null && !future.isCancelled() && !future.isDone())
-			engine.getExecutor().execute(future);
+		if (future != null && !future.isCancelled() && !future.isDone()) {
+			while (true) { // TODO check rejected tasks
+				engine.getExecutor().execute(future);
+				return;
+			}
+		}
 	}
 
 	/**

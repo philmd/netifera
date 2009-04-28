@@ -6,10 +6,18 @@ import java.nio.channels.SelectableChannel;
 import com.netifera.platform.net.sockets.internal.SocketEngineService;
 
 public abstract class AsynchronousSelectableChannel implements AsynchronousChannel {
-	protected SocketEngineService engine;
+	protected final SocketEngineService engine;
 	
 	/** The socket or datagram channel which is wrapped */
-	protected SelectableChannel channel;
+	private SelectableChannel channel;
+	
+	protected AsynchronousSelectableChannel(SocketEngineService engine) {
+		this.engine = engine;
+	}
+	
+	protected final void setChannel(SelectableChannel channel) {
+		this.channel = channel;
+	}
 	
 	public SelectableChannel getWrappedChannel() {
 		return channel;

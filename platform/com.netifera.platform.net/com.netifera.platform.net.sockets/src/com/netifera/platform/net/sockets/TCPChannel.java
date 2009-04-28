@@ -19,13 +19,12 @@ public class TCPChannel extends AsynchronousSocketChannel {
 	}
 	
 	public TCPChannel(SocketEngineService engine, SocketChannel channel) {
-		this.engine = engine;
-		this.channel = channel;
+		super(engine, channel);
 	}
 
 	@Override
 	public SocketChannel getWrappedChannel() {
-		return (SocketChannel)channel;
+		return (SocketChannel)super.getWrappedChannel();
 	}
 	
 	private Socket getSocket() {
@@ -36,9 +35,9 @@ public class TCPChannel extends AsynchronousSocketChannel {
 		getSocket().bind(new InetSocketAddress(local.getAddress().toInetAddress(), local.getPort()));
 	}
 
-	public <A> Future<Void> connect(TCPSocketLocator remote,
+	public <A> Future<Boolean> connect(TCPSocketLocator remote,
 			long timeout, TimeUnit unit,
-			A attachment, CompletionHandler<Void, ? super A> handler) throws IOException, InterruptedException {
+			A attachment, CompletionHandler<Boolean, ? super A> handler) throws IOException, InterruptedException {
 		return engine.asynchronousConnect(this, remote, timeout, unit, attachment, handler);
 	}
 

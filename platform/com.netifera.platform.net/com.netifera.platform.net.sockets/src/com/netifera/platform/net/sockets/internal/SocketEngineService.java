@@ -13,15 +13,21 @@ import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.osgi.service.component.ComponentContext;
 
 import com.netifera.platform.api.log.ILogManager;
 import com.netifera.platform.api.log.ILogger;
@@ -55,9 +61,9 @@ public class SocketEngineService implements ISocketEngineService {
 	private Thread selectThread;
 
 	// XXX document please
-	final private BlockingQueue<SelectionContext> registrationQueue = new LinkedBlockingQueue<SelectionContext>();
+	final private BlockingQueue<SelectionContext> registrationQueue = new LinkedBlockingQueue<SelectionContext>(256); // XXX limit
 
-	final private Map<AsynchronousSelectableChannel, SelectionContext> contextMap = Collections.synchronizedMap(new HashMap<AsynchronousSelectableChannel, SelectionContext>());
+	final private Map<AsynchronousSelectableChannel, SelectionContext> contextMap = Collections.synchronizedMap(new HashMap<AsynchronousSelectableChannel, SelectionContext>()); // FIXME ConcurrentHashMap ?
 	
 	private ILogger logger;
 	
@@ -65,8 +71,36 @@ public class SocketEngineService implements ISocketEngineService {
 	 * We use a cached thread pool because the thread resources are bound by the
 	 * maximum open socket count.
 	 */
-	private final ExecutorService executor = Executors.newCachedThreadPool();
-
+	private ExecutorService executor;
+	
+	private void startExecutor() {
+		executor = new ThreadPoolExecutor(0, 64, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+			new ThreadFactory() {
+				final ThreadGroup group = Thread.currentThread().getThreadGroup();
+				
+				public Thread newThread(Runnable r) {
+					Thread t = new Thread(group, r, "Socket Engine Executor");
+					t.setDaemon(false);
+					return t;
+				}
+		
+			},
+			new RejectedExecutionHandler() {
+		
+				public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+					// TODO Queue full, sleep or add in another queue
+					
+				}	
+			}
+		);
+	}
+	
+	private void stopExecutor() {
+		List<Runnable> unexecutedTasks = executor.shutdownNow();
+		if (!unexecutedTasks.isEmpty()) {
+			logger.warning("executor shut down with " + unexecutedTasks.size() + " awaiting task" + (unexecutedTasks.size() > 1 ? "s" : ""));
+		}
+	}
 	
 	public int getMaxConnectingSockets() {
 		return maxConnectingSockets;
@@ -108,10 +142,10 @@ public class SocketEngineService implements ISocketEngineService {
 		return channel;
 	}
 
-	public <A> Future<Void> asynchronousConnect(TCPChannel channel,
+	public <A> Future<Boolean> asynchronousConnect(TCPChannel channel,
 			TCPSocketLocator remote,
 			long timeout, TimeUnit unit,
-			final A attachment, final CompletionHandler<Void, ? super A> handler) throws IOException, InterruptedException {
+			final A attachment, final CompletionHandler<Boolean, ? super A> handler) throws IOException, InterruptedException { // FIXME InterruptedException?
 
 		if (selector == null)
 			startSelector();
@@ -127,14 +161,14 @@ public class SocketEngineService implements ISocketEngineService {
 		/*
 		 * Wrap the handler in another completion handler that performs outstanding connection accounting.
 		 */
-		final CompletionHandler<Void, A> connectCompletion = new CompletionHandler<Void, A>() {
+		final CompletionHandler<Boolean, A> connectCompletion = new CompletionHandler<Boolean, A>() {
 
 			public void cancelled(A a) {
 				handler.cancelled(a);
 				countConnectFinished();				
 			}
 
-			public void completed(Void result, A a) {
+			public void completed(Boolean result, A a) {
 				handler.completed(result, a);
 				countConnectFinished();
 			}
@@ -147,10 +181,10 @@ public class SocketEngineService implements ISocketEngineService {
 		};
 		
 		long deadline = System.currentTimeMillis() + unit.toMillis(timeout);
-		SelectionFuture<Void,? super A> future = new SelectionFuture<Void,A>(connectCompletion, attachment, deadline, logger, new Callable<Void>() {
-			public Void call() throws Exception {
+		SelectionFuture<Boolean, ? super A> future = new SelectionFuture<Boolean, A>(connectCompletion, attachment, deadline, logger, new Callable<Boolean>() {
+			public Boolean call() throws Exception {
 				socket.finishConnect();
-				return null;
+				return true;
 			}
 		});
 
@@ -171,17 +205,22 @@ public class SocketEngineService implements ISocketEngineService {
 			return null;
 		}
 		context.enqueueConnect(future);
-		registrationQueue.add(context);
-		selector.wakeup();
+		//registrationQueue.add(context); // FIXME offer()
+		if (!registrationQueue.offer(context)) {
+			// TODO
+			debug_breakpoint();
+		}
+		wakeup();
+		
 		return future;
 	}
 
 	public <A> Future<Integer> asynchronousRead(final AsynchronousSelectableChannel channel,
 			final ByteBuffer dst, long timeout, TimeUnit unit,
-			final A attachment, final CompletionHandler<Integer,? super A> handler) {
+			final A attachment, final CompletionHandler<Integer, ? super A> handler) {
 
 		long deadline = System.currentTimeMillis() + unit.toMillis(timeout);
-		SelectionFuture<Integer,A> future = new SelectionFuture<Integer,A>(handler, attachment, deadline, logger, new Callable<Integer>() {
+		SelectionFuture<Integer,A> future = new SelectionFuture<Integer, A>(handler, attachment, deadline, logger, new Callable<Integer>() {
 			public Integer call() throws Exception {
 				Integer count = ((ReadableByteChannel)channel.getWrappedChannel()).read(dst);
 				if (count <= 0) throw new ClosedChannelException();
@@ -189,27 +228,21 @@ public class SocketEngineService implements ISocketEngineService {
 			}
 		});
 		
-		SelectionContext context = contextMap.get(channel);
-		if (context == null) {
+		if (!enqueueRead(channel, future)) {
 			logger.error("Context not found on read() "+channel);
 			handler.cancelled(attachment);
 			return null;
 		}
-//		if (context.reader != null) throw new PendingReadException();
-		context.enqueueRead(future);
-		registrationQueue.add(context);
-		selector.wakeup();
-
 		return future;
 	}
 	
 	public <A> Future<Integer> asynchronousWrite(final AsynchronousSelectableChannel channel,
 			final ByteBuffer src,
 			long timeout, TimeUnit unit,
-			final A attachment, final CompletionHandler<Integer,? super A> handler) {
+			final A attachment, final CompletionHandler<Integer, ? super A> handler) {
 
 		long deadline = System.currentTimeMillis() + unit.toMillis(timeout);
-		SelectionFuture<Integer,A> future = new SelectionFuture<Integer,A>(handler, attachment, deadline, logger, new Callable<Integer>() {
+		SelectionFuture<Integer,A> future = new SelectionFuture<Integer, A>(handler, attachment, deadline, logger, new Callable<Integer>() {
 			public Integer call() throws Exception {
 				Integer count = ((WritableByteChannel)channel.getWrappedChannel()).write(src);
 				if (count <= 0) throw new ClosedChannelException();
@@ -217,42 +250,31 @@ public class SocketEngineService implements ISocketEngineService {
 			}
 		});
 		
-		SelectionContext context = contextMap.get(channel);
-		if (context == null) {
+		if (!enqueueWrite(channel, future)) {
 			logger.error("Context not found on write() "+channel);
 			handler.cancelled(attachment);
 			return null;
 		}
-//		if (context.reader != null) throw new PendingReadException();
-		context.enqueueWrite(future);
-		registrationQueue.add(context);
-		selector.wakeup();
-
 		return future;
 	}
 
 	public <A> Future<UDPSocketLocator> asynchronousReceive(final UDPChannel channel,
 			final ByteBuffer dst, long timeout, TimeUnit unit,
-			final A attachment, final CompletionHandler<UDPSocketLocator,? super A> handler) {
+			final A attachment, final CompletionHandler<UDPSocketLocator, ? super A> handler) {
 		
 		long deadline = System.currentTimeMillis() + unit.toMillis(timeout);
-		SelectionFuture<UDPSocketLocator,A> future = new SelectionFuture<UDPSocketLocator,A>(handler, attachment, deadline, logger, new Callable<UDPSocketLocator>() {
+		SelectionFuture<UDPSocketLocator,A> future = new SelectionFuture<UDPSocketLocator, A>(handler, attachment, deadline, logger, new Callable<UDPSocketLocator>() {
 			public UDPSocketLocator call() throws Exception {
 				InetSocketAddress address = (InetSocketAddress) channel.getWrappedChannel().receive(dst);
 				return new UDPSocketLocator(InternetAddress.fromInetAddress(address.getAddress()),address.getPort());
 			}
 		});
 		
-		SelectionContext context = contextMap.get(channel);
-		if (context == null) {
+		if (!enqueueRead(channel, future)) {
 			logger.error("Context not found on recv() for "+channel);
 			handler.cancelled(attachment);
 			return null;
 		}
-		context.enqueueRead(future);
-		registrationQueue.add(context);
-		selector.wakeup();
-
 		return future;
 	}
 
@@ -269,19 +291,46 @@ public class SocketEngineService implements ISocketEngineService {
 			}
 		});
 		
-		SelectionContext context = contextMap.get(channel);
-		if (context == null) {
+		if (!enqueueWrite(channel, future)) {
 			logger.error("Context not found on send() "+channel);
 			handler.cancelled(attachment);
 			return null;
 		}
-		context.enqueueWrite(future);
-		registrationQueue.add(context);
-		selector.wakeup();
-
 		return future;
 	}
 
+	public boolean enqueueRead(AsynchronousSelectableChannel channel, SelectionFuture<?, ?> future) {
+		SelectionContext context = contextMap.get(channel);
+		if (context == null) {
+			return false;
+		}
+		context.enqueueRead(future);
+		//registrationQueue.add(context); // FIXME offer()
+		if (!registrationQueue.offer(context)) {
+			// TODO
+			debug_breakpoint();
+		}
+		wakeup();
+		
+		return true;
+	}
+	
+	public boolean enqueueWrite(AsynchronousSelectableChannel channel, SelectionFuture<Integer, ?> future) {
+		SelectionContext context = contextMap.get(channel);
+		if (context == null) {
+			return false;
+		}
+		context.enqueueWrite(future);
+		//registrationQueue.add(context); // FIXME offer()
+		if (!registrationQueue.offer(context)) {
+			// TODO
+			debug_breakpoint();
+		}
+		wakeup();
+		
+		return true;
+	}
+	
 	private void countOpenSocket() {
 		currentlyOpenSockets.incrementAndGet();
 	}
@@ -355,7 +404,7 @@ public class SocketEngineService implements ISocketEngineService {
 				selectLoop();
 
 				try {
-					selector.close();
+					selector.close(); // TODO ClosedSelectorException
 				} catch (IOException e) {
 					assert logger != null;
 					logger.error("I/O error closing selector", e);
@@ -443,15 +492,14 @@ public class SocketEngineService implements ISocketEngineService {
 	 * removed later.
 	 */
 	// TODO called by deactivate()
-	void close() {
+	private void close() {
 		//selectThread.interrupt();
 		
 		try {
-			selector.close();
+			selector.close(); // TODO ClosedSelectorException
 		} catch (IOException e) {
 			logger.error("I/O error closing selector", e);
 		}
-		executor.shutdownNow();
 	}
 
 	private synchronized void registerChannel(AsynchronousSelectableChannel channel, SelectionContext context) {
@@ -459,6 +507,7 @@ public class SocketEngineService implements ISocketEngineService {
 		countOpenSocket();
 	}
 	
+	// TODO make that method not public
 	public synchronized void unregisterChannel(AsynchronousSelectableChannel channel) {
 		if (null != contextMap.remove(channel))
 			countSocketClose();
@@ -468,6 +517,10 @@ public class SocketEngineService implements ISocketEngineService {
 		return contextMap.containsKey(channel);
 	}
 */	
+	Selector wakeup() {
+		return selector.wakeup();
+	}
+	
 	Selector getSelector() {
 		return selector;
 	}
@@ -483,5 +536,18 @@ public class SocketEngineService implements ISocketEngineService {
 	protected void unsetLogManager(ILogManager logManager) {
 		// FIXME commented: workaround for #159
 		//logger = null;
+	}
+	
+	private void debug_breakpoint() {
+		
+	}
+	
+	protected void activate(ComponentContext context) {
+		startExecutor();
+	}
+	
+	protected void deactivate(ComponentContext context) {
+		close();
+		stopExecutor();
 	}
 }

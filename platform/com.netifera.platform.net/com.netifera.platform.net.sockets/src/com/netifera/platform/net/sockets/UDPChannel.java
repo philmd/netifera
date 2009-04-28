@@ -3,6 +3,7 @@ package com.netifera.platform.net.sockets;
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.concurrent.Future;
@@ -20,26 +21,26 @@ public class UDPChannel extends AsynchronousSocketChannel {
 	}
 
 	public UDPChannel(SocketEngineService engine, DatagramChannel channel) {
-		this.engine = engine;
-		this.channel = channel;
+		super(engine, channel);
 	}
 
 	@Override
 	public DatagramChannel getWrappedChannel() {
-		return (DatagramChannel)channel;
+		return (DatagramChannel)super.getWrappedChannel();
 	}
 
 	private DatagramSocket getSocket() {
 		return getWrappedChannel().socket();
 	}
 	
-	public void bind(UDPSocketLocator local) throws IOException {
-		((DatagramChannel)channel).socket().bind(new InetSocketAddress(local.getAddress().toInetAddress(), local.getPort()));
+	public void bind(UDPSocketLocator local) throws SocketException {
+		// TODO check privilege and use backdoor
+		getSocket().bind(new InetSocketAddress(local.getAddress().toInetAddress(), local.getPort()));
 	}
 	
-	public void connect(UDPSocketLocator remote) throws IOException {
+	public boolean connect(UDPSocketLocator remote) throws IOException {
 		InetSocketAddress sockaddr = new InetSocketAddress(remote.getAddress().toInetAddress(), remote.getPort());
-		((DatagramChannel)channel).connect(sockaddr);
+		getWrappedChannel().connect(sockaddr);
 		
 		// workarounds for gnu classpath
 		DatagramSocket socket = getSocket();
@@ -49,6 +50,7 @@ public class UDPChannel extends AsynchronousSocketChannel {
 		if (!socket.isConnected()) {
 			socket.connect(sockaddr);
 		}
+		return true;
 	}
 
 	public UDPSocketLocator getRemoteAddress() {

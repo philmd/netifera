@@ -2,8 +2,11 @@ package com.netifera.platform.net.sockets;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
+
+import com.netifera.platform.net.sockets.internal.SocketEngineService;
 
 public class LineChannel extends AsynchronousSocketChannel {
 	final private AsynchronousByteChannel channel;
@@ -11,7 +14,14 @@ public class LineChannel extends AsynchronousSocketChannel {
 	final private Charset charset = Charset.forName("UTF-8");
 	final private StringBuffer inputBuffer = new StringBuffer();
 	
+	LineChannel(SocketEngineService engine, SelectableChannel schannel, AsynchronousByteChannel bchannel) {
+		super(engine, schannel);
+		this.channel = bchannel;
+	}
+	
+	@Deprecated
 	public LineChannel(AsynchronousByteChannel channel) {
+		super(null, null); // XXX
 		this.channel = channel;
 	}
 	
