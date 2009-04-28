@@ -1,0 +1,25 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: SunRPC UI Plug-in
+Bundle-SymbolicName: com.netifera.platform.net.sunrpc.ui
+Bundle-Version: 1.0.0
+Bundle-Vendor: netifera
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime
+Bundle-RequiredExecutionEnvironment: J2SE-1.5
+Bundle-ActivationPolicy: lazy
+Import-Package: com.netifera.platform.api.model,
+ com.netifera.platform.api.model.layers,
+ com.netifera.platform.net.model,
+ com.netifera.platform.net.sunrpc.model,
+ com.netifera.platform.net.sunrpc.tools,
+ com.netifera.platform.tools.options,
+ com.netifera.platform.ui.actions,
+ com.netifera.platform.ui.api.actions,
+ com.netifera.platform.ui.api.model,
+ com.netifera.platform.ui.images,
+ com.netifera.platform.util,
+ com.netifera.platform.util.addresses.inet
+Service-Component: OSGI-INF/entity-action-provider.xml,
+ OSGI-INF/label-provider.xml,
+ OSGI-INF/tree-layer-provider.xml

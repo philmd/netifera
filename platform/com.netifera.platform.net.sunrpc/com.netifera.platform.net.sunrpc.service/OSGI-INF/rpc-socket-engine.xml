@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component name="netifera.sunrpc-socket-engine">
+	<implementation class="com.netifera.platform.net.sunrpc.internal.sockets.RPCSocketEngineService" />
+	<service>
+		<provide interface="com.netifera.platform.net.sunrpc.sockets.IRPCSocketEngineService" />
+	</service>
+	
+	 <reference
+    	name="LOGGER"
+    	interface="com.netifera.platform.api.log.ILogManager"
+    	bind="setLogManager"
+    	unbind="unsetLogManager"
+    />
+	
+	<reference
+    	name="SOCKET_ENGINE"
+    	interface="com.netifera.platform.net.sockets.ISocketEngineService"
+    	bind="setSocketEngine"
+    	unbind="unsetSocketEngine"
+    />
+    
+</component>
