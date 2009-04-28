@@ -30,6 +30,8 @@ public class PortRange implements Comparable<PortRange>, IndexedIterable<Integer
 	public String toString() {
 		if(start == end) {
 			return Integer.toString(start);
+		} else if (start + 1 == end) {
+			return start + "," + end;
 		}
 		return start + "-" + end;
 	}

@@ -21,8 +21,10 @@ public class FTP extends NetworkService implements IAuthenticable {
 
 	public FTP(ISocketLocator locator) {
 		super(locator);
+		assert locator instanceof TCPSocketLocator; // FIXME
 	}
 	
+	@Override
 	public TCPSocketLocator getLocator() {
 		return (TCPSocketLocator) super.getLocator();
 	}

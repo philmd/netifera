@@ -76,7 +76,7 @@ public class FTPAuthBruteforcer extends AuthenticationBruteforcer {
 			protected void authenticate(TCPChannel channel, final Credential credential,
 					final long timeout, final TimeUnit unit,
 					final CompletionHandler<Boolean, Credential> handler) {
-				final LineChannel lineChannel = new LineChannel(channel);
+				final LineChannel lineChannel = channel.toLineChannel();
 				final UsernameAndPassword usernameAndPassword = (UsernameAndPassword) credential;
 				command(lineChannel, "USER "+usernameAndPassword.getUsernameString(),timeout,unit,new CompletionHandler<Integer,Void>() {
 					public void completed(Integer result, Void attachment) {

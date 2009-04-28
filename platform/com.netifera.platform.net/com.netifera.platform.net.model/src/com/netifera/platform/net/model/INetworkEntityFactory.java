@@ -16,8 +16,9 @@ public interface INetworkEntityFactory {
 	void addOpenUDPPorts(long realm, long space, InternetAddress address, PortSet ports);
 
 	ServiceEntity createService(long realm, long space, ISocketLocator locator, String serviceType, Map<String,String> info);
-	ClientEntity createClient(long realm, long space, InternetAddress address, String serviceType, Map<String,String> info, ISocketLocator service);
-	ClientServiceConnectionEntity createConnection(long space, ClientEntity client, ServiceEntity service, String identity);
+	ClientEntity createClient(long realm, long space, InternetAddress clientAddress, String serviceType, Map<String,String> info, ISocketLocator serviceLocator); // TODO add ISocketLocator serviceLocator -> HostEntity serverHost, i.e. `showmount -a`
+	// TODO use Identity
+	ClientServiceConnectionEntity createConnection(long space, ClientEntity client, ServiceEntity service, String identity); // identity: user, pubkey, ...
 
 	void setOperatingSystem(long realm, long space, InternetAddress address, String os);
 
@@ -25,4 +26,7 @@ public interface INetworkEntityFactory {
 	
 	PasswordEntity createPassword(long realm, long space, ISocketLocator service, String password);
 	UsernameAndPasswordEntity createUsernameAndPassword(long realm, long space, ISocketLocator service, String username, String password);
+	// TODO remove 2 previous, replace by smth like serviceAddCredential(ISocketLocator service, Credential credential[user, userpw, privkey, ...])
+	//CredentialEntity createCredential(long realm, long space, ISocketLocator service, Credential credential);
+	//void addCredential(long realm, long space, ISocketLocator service, CredentialEntity credential);
 }

@@ -27,6 +27,7 @@ public abstract class NetworkService implements INetworkService {
 		return getURI();
 	}
 	
+	// XXX can be RPC random port
 	public abstract int getDefaultPort();
 	
 	/*

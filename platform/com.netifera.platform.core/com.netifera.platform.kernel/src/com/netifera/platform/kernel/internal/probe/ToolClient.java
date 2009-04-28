@@ -52,7 +52,7 @@ public class ToolClient {
 	
 	private void exchangeMessages(String toolClassName, IToolConfiguration configuration, ISpace space) throws MessengerException {
 		logger.debug("Sending tool launch message to launch: " + toolClassName);
-		ToolLaunchMessage response = (ToolLaunchMessage) probe.getMessenger().exchangeMessage(new ToolLaunchMessage(toolClassName, configuration, space.getId()));
+		ToolLaunchMessage response = (ToolLaunchMessage) probe.getMessenger().exchangeMessage(new ToolLaunchMessage(toolClassName, configuration, space.getId())); // XXX ClassCastException: com.netifera.platform.dispatcher.StatusMessage <- tool not exported by toolprovider
 		logger.debug("Launch completed, task id = " + response.getTaskId());
 		taskClient.createTask(toolClassName, response.getTaskId(), space);
 		taskClient.startTask(response.getTaskId());

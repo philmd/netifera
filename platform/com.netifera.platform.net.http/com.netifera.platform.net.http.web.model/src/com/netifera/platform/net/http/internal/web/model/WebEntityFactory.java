@@ -160,13 +160,13 @@ public class WebEntityFactory implements IWebEntityFactory {
 		return null;
 	}
 	
-	// TODO split createRequest+createResponse for (sniffed) asymetric traffic
+	// TODO split createRequest+createResponse for (sniffed) asymmetric traffic
 	public synchronized HTTPRequestEntity createRequestResponse(final long realm, long spaceId,
-			InternetAddress clientAddress, Map<String,String> clientInfo, TCPSocketLocator http,
+			InternetAddress clientAddress, Map<String,String> clientInfo, TCPSocketLocator httpServiceLocator,
 			String requestLine, String responseStatusLine, String contentType) {
 		
-		ServiceEntity service = createWebServer(realm, spaceId, http, null);
-		ClientEntity client = networkEntityFactory.createClient(realm, spaceId, clientAddress, "HTTP", clientInfo, null);
+		ServiceEntity service = createWebServer(realm, spaceId, httpServiceLocator, null);
+		ClientEntity client = networkEntityFactory.createClient(realm, spaceId, clientAddress, "HTTP", clientInfo, httpServiceLocator); // FIXME verify
 		ClientServiceConnectionEntity connection = networkEntityFactory.createConnection(spaceId, client, service, null);
 		
 		HTTPRequestEntity answer = new HTTPRequestEntity(getWorkspace(), connection, requestLine);

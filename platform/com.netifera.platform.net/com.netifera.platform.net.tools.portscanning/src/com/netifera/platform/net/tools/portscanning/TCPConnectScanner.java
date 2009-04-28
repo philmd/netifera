@@ -25,6 +25,7 @@ import com.netifera.platform.util.PortSet;
 import com.netifera.platform.util.addresses.inet.InternetAddress;
 import com.netifera.platform.util.locators.TCPSocketLocator;
 
+// TODO usleep() during scan, not if addr in iface lan (not routed)
 public class TCPConnectScanner extends AbstractPortscanner {	
 	private int errorCount = 0;
 	private int errorThreshold = 30;
@@ -52,11 +53,11 @@ public class TCPConnectScanner extends AbstractPortscanner {
 			try {
 				channel = Activator.getInstance().getSocketEngine().openTCP();
 				outstandingConnects.incrementAndGet();
-				future = channel.connect(locator, 5000, TimeUnit.MILLISECONDS, null, new CompletionHandler<Void,Void>() {
+				future = channel.connect(locator, 5000, TimeUnit.MILLISECONDS, null, new CompletionHandler<Boolean, Void>() {
 					public void cancelled(Void attachment) {
 						done();
 					}
-					public void completed(Void result, Void attachment) {
+					public void completed(Boolean result, Void attachment) {
 //						context.debug("Connected to "+locator);
 
 						PortSet ports = new PortSet();

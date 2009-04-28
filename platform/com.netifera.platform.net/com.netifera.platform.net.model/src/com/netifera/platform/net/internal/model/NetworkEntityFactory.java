@@ -281,23 +281,23 @@ public class NetworkEntityFactory implements INetworkEntityFactory {
 	}
 
 	public synchronized ClientEntity createClient(long realm, long spaceId,
-			InternetAddress address, String serviceType, Map<String, String> info, ISocketLocator service) {
+			InternetAddress clientAddress, String serviceType, Map<String, String> info, ISocketLocator serviceLocator) {
 
 		if (serviceType == null)
 			throw new IllegalArgumentException("serviceType cannot be null");
 		
-		InternetAddressEntity addressEntity = createAddress(realm, spaceId, address);
-		HostEntity hostEntity = addressEntity.getHost();
+		InternetAddressEntity clientAddressEntity = createAddress(realm, spaceId, clientAddress);
+		HostEntity clientHostEntity = clientAddressEntity.getHost();
 
 		if(info != null) {
-			if (updateSystem(hostEntity, info))
-				hostEntity.update();
+			if (updateSystem(clientHostEntity, info))
+				clientHostEntity.update();
 		}
 
-		ClientEntity answer = findClient(hostEntity, serviceType, info != null ? info.get("product") : null);
+		ClientEntity answer = findClient(clientHostEntity, serviceType, info != null ? info.get("product") : null);
 		
 		if (answer == null)
-			return createNewClient(spaceId, addressEntity.getHost(), serviceType, info);
+			return createNewClient(spaceId, clientAddressEntity.getHost(), serviceType, info);
 		else
 			answer.addToSpace(spaceId);
 		
@@ -319,16 +319,16 @@ public class NetworkEntityFactory implements INetworkEntityFactory {
 			
 			if (info.containsKey("password")) {
 				if (info.containsKey("username"))
-					createUsernameAndPassword(realm, spaceId, service, info.get("username"), info.get("password"));
+					createUsernameAndPassword(realm, spaceId, serviceLocator, info.get("username"), info.get("password"));
 				else
-					createPassword(realm, spaceId, service, info.get("password"));
+					createPassword(realm, spaceId, serviceLocator, info.get("password"));
 			}
 		}
 
-		if (service != null) {
-			ServiceEntity serviceEntity = findService(realm, service);
+		if (serviceLocator != null) {
+			ServiceEntity serviceEntity = findService(realm, serviceLocator);
 			if (serviceEntity == null)
-				System.err.println("ERROR: connection to unknown service: "+address+" -> "+service);
+				System.err.println("ERROR: connection to unknown service: "+clientAddress+" -> "+serviceLocator);
 			else
 				createConnection(spaceId, answer, serviceEntity, identity);
 		}

@@ -6,6 +6,10 @@ import com.netifera.platform.api.model.IEntityReference;
 import com.netifera.platform.api.model.IWorkspace;
 import com.netifera.platform.util.HexaEncoding;
 import com.netifera.platform.util.addresses.inet.InternetAddress;
+import com.netifera.platform.util.locators.ISocketLocator;
+import com.netifera.platform.util.locators.SSLSocketLocator;
+import com.netifera.platform.util.locators.TCPSocketLocator;
+import com.netifera.platform.util.locators.UDPSocketLocator;
 
 
 public class ServiceEntity extends AbstractEntity {
@@ -42,12 +46,24 @@ public class ServiceEntity extends AbstractEntity {
 		this.protocol = null;
 		this.port = 0;
 	}
+	
 	public int getPort() {
 		return port;
 	}
 	
 	public String getProtocol() {
 		return protocol;
+	}
+	
+	public ISocketLocator getLocator() {
+		if (isSSL()) {
+			return new SSLSocketLocator(getAddress().getAddress(), port);
+		} else if ("udp".compareToIgnoreCase(protocol) == 0) {
+			return new UDPSocketLocator(getAddress().getAddress(), port);
+		} else if ("tcp".compareToIgnoreCase(protocol) == 0) {
+			return new TCPSocketLocator(getAddress().getAddress(), port);
+		}
+		throw new IllegalArgumentException("unknow protocol: " + protocol);
 	}
 	
 	public InternetAddressEntity getAddress() {

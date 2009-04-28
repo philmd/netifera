@@ -3,7 +3,7 @@
       id="com.netifera.platform.net.ui.feature"
       label="Net UI Feature"
       version="1.0.0"
-      provider-name="NETIFERA">
+      provider-name="netifera">
 
    <description url="http://www.example.com/description">
       [Enter Feature Description here.]

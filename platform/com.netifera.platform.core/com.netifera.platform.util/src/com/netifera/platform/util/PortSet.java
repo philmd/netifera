@@ -17,7 +17,7 @@ public class PortSet implements IndexedIterable<Integer> {
 	private final List<PortRange> ports;
 
 	public PortSet() throws IllegalArgumentException {
-		ports = new ArrayList<PortRange>();
+		ports = new ArrayList<PortRange>(); // TODO LinkedList?
 	}
 
 	public PortSet(final String ports) throws IllegalArgumentException {

@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.eclipse.swt.graphics.Image;
 
+import com.netifera.platform.api.model.AbstractEntity;
 import com.netifera.platform.api.model.IShadowEntity;
 import com.netifera.platform.ui.UIPlugin;
 import com.netifera.platform.ui.api.model.IEntityInformationProvider;
@@ -13,6 +14,7 @@ import com.netifera.platform.ui.api.model.IEntityLabelProviderService;
 import com.netifera.platform.ui.images.ImageCache;
 
 public class EntityLabelProviderService implements IEntityLabelProviderService {
+	private final static boolean DEBUG = false;
 	
 	private final static String UNKNOWN_IMAGE = "icons/unknown_entity.png";
 	private final ImageCache images = new ImageCache(UIPlugin.PLUGIN_ID);
@@ -23,8 +25,12 @@ public class EntityLabelProviderService implements IEntityLabelProviderService {
 	public synchronized String getText(IShadowEntity entity) {
 		for(IEntityLabelProvider provider : labelProviders) {
 			String text = provider.getText(entity);
-			if(text != null)
+			if(text != null) {
+				if (DEBUG) {
+					return String.format("{%s#%04x} %s", entity.getTypeName(), ((AbstractEntity)entity).privateGetId(), text);
+				}
 				return text;
+			}
 		}
 		// not found
 		return (entity.getTypeName().matches("[AEIOU].*") ? "an " : "a ") + entity.getTypeName();
@@ -60,6 +66,7 @@ public class EntityLabelProviderService implements IEntityLabelProviderService {
 		return baseImage;
 	}
 	
+	// FIXME try/catch to avoid this thread to die?
 	public synchronized String getInformation(IShadowEntity entity) {
 		StringBuffer buffer = new StringBuffer();
 		for(IEntityInformationProvider provider : informationProviders) {

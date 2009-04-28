@@ -48,7 +48,7 @@ public class POP3AuthBruteforcer extends AuthenticationBruteforcer {
 			protected void authenticate(TCPChannel channel, final Credential credential,
 					final long timeout, final TimeUnit unit,
 					final CompletionHandler<Boolean, Credential> handler) {
-				final LineChannel lineChannel = new LineChannel(channel);
+				final LineChannel lineChannel = channel.toLineChannel();
 
 				// read until +OK
 				lineChannel.readLine(timeout, unit, null, new CompletionHandler<String,Void>() {

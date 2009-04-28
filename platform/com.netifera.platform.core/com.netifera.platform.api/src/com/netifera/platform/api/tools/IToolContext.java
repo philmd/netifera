@@ -2,9 +2,11 @@ package com.netifera.platform.api.tools;
 
 import com.netifera.platform.api.tasks.ITaskMessenger;
 
+// TODO jdoc
 public interface IToolContext extends ITaskMessenger {
 	IToolConfiguration getConfiguration();
 	long getSpaceId();
+	
 	void setTotalWork(int totalWork);
 	void worked(int work);
 	void done();

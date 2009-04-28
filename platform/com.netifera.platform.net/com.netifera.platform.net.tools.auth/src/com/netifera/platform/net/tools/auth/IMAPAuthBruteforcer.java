@@ -48,7 +48,7 @@ public class IMAPAuthBruteforcer extends AuthenticationBruteforcer {
 			protected void authenticate(final TCPChannel channel, final Credential credential,
 					final long timeout, final TimeUnit unit,
 					final CompletionHandler<Boolean, Credential> handler) {
-				final LineChannel lineChannel = new LineChannel(channel);
+				final LineChannel lineChannel = channel.toLineChannel();
 				lineChannel.setSeparator("\n");
 				lineChannel.writeLine("1 LOGIN "+((UsernameAndPassword)credential).getUsernameString()+" "+((UsernameAndPassword)credential).getPasswordString(), timeout, unit, null, new CompletionHandler<Void,Void>() {
 					public void cancelled(Void attachment) {

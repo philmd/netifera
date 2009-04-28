@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<component name="netifera.channelfactory.tcp">
+<component name="netifera.channelfactory.tcplisten">
 	<implementation class="com.netifera.platform.internal.channel.tcplisten.TCPListenChannelFactory" />
 	<service>
 		<provide interface="com.netifera.platform.api.channels.IChannelFactory" />

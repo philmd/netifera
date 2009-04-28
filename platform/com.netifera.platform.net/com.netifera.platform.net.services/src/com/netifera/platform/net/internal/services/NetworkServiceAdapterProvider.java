@@ -43,6 +43,9 @@ public class NetworkServiceAdapterProvider implements IEntityAdapterProvider {
 			return null;
 		
 		ISocketLocator locator = getSocketLocator(serviceEntity);
+		if (locator == null) {
+			return null;
+		}
 		if (adapterType.isAssignableFrom(locator.getClass()))
 			return locator;
 
@@ -65,7 +68,7 @@ public class NetworkServiceAdapterProvider implements IEntityAdapterProvider {
 			return new UDPSocketLocator(address,port);
 		if (protocol.equals("ssl"))
 			return new SSLSocketLocator(address,port);
-		return null; // or exception?
+		return null;
 	}
 	
 	protected void registerProvider(INetworkServiceProvider provider) {

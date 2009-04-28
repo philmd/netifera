@@ -17,7 +17,7 @@ public class HostEntity extends AbstractEntity {
 
 	private String label;
 	
-	private List<IEntityReference> addresses = new ArrayList<IEntityReference>();
+	private final List<IEntityReference> addresses = new ArrayList<IEntityReference>();
 	private IEntityReference defaultAddress;
 	
 	public HostEntity(IWorkspace workspace, long realmId) {
@@ -33,7 +33,7 @@ public class HostEntity extends AbstractEntity {
 	}
 
 	public List<NetworkAddressEntity> getAddresses() {
-		List<NetworkAddressEntity> answer = new ArrayList<NetworkAddressEntity>();
+		List<NetworkAddressEntity> answer = new ArrayList<NetworkAddressEntity>(addresses.size());
 		for (IEntityReference ref: addresses)
 			answer.add((NetworkAddressEntity) referenceToEntity(ref));
 		return answer;
