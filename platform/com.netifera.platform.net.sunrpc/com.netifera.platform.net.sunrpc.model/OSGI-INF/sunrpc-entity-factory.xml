@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component name="netifera.sunrpc-entity-factory">
-	<implementation class="com.netifera.platform.net.sunrpc.internal.model.RPCEntityFactory"/>
+	<implementation class="com.netifera.platform.net.sunrpc.internal.model.RpcEntityFactory"/>
 	<service>
-		<provide interface="com.netifera.platform.net.sunrpc.model.IRPCEntityFactory" />
+		<provide interface="com.netifera.platform.net.sunrpc.model.IRpcEntityFactory" />
 	</service>
 	
 	<reference 
