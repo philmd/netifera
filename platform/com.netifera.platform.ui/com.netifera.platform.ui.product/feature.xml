@@ -99,6 +99,14 @@
          id="com.netifera.platform.demo.feature"
          version="0.0.0"/>
 
+   <includes
+         id="com.netifera.platform.net.sunrpc.feature"
+         version="0.0.0"/>
+
+   <includes
+         id="com.netifera.platform.net.sunrpc.source"
+         version="0.0.0"/>
+
    <requires>
       <import feature="com.netifera.platform.ui.feature" version="1.0.0"/>
       <import feature="com.netifera.platform.core.feature" version="1.0.0"/>

@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: RPC Service Plug-in
+Bundle-Name: SunRPC Service Plug-in
 Bundle-SymbolicName: com.netifera.platform.net.sunrpc.service
 Bundle-Version: 1.0.0
 Bundle-Vendor: netifera
