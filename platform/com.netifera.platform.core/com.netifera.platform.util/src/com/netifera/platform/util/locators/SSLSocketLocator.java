@@ -2,6 +2,7 @@ package com.netifera.platform.util.locators;
 
 import com.netifera.platform.util.addresses.inet.InternetAddress;
 
+@Deprecated // use SslSocketLocator
 public class SSLSocketLocator extends TCPSocketLocator {
 	private static final long serialVersionUID = 6861783658607769609L;
 

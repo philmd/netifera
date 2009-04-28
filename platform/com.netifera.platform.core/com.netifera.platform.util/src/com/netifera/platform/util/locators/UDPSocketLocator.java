@@ -4,6 +4,7 @@ import java.net.InetSocketAddress;
 
 import com.netifera.platform.util.addresses.inet.InternetAddress;
 
+@Deprecated // use InetSocketLocator
 public class UDPSocketLocator implements ISocketLocator {
 	private static final long serialVersionUID = -8153031721220121824L;
 	
